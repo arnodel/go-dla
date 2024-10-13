@@ -2,21 +2,27 @@ package main
 
 import "iter"
 
-type WorldMap map[Point]struct{}
+type WorldMap [worldWidth * worldHeight]bool
 
 // Add p to the map.
-func (m WorldMap) Add(p Point) {
-	m[p] = struct{}{}
+func (m *WorldMap) Add(p Point) {
+	if p.X < 0 || p.X >= worldWidth || p.Y < 0 || p.Y >= worldHeight {
+		return
+	}
+	m[p.X*worldHeight+p.Y] = true
 }
 
 // Contains returns true if p was added to the map.
-func (m WorldMap) Contains(p Point) bool {
-	_, ok := m[p]
-	return ok
+func (m *WorldMap) Contains(p Point) bool {
+	i := p.X*worldHeight + p.Y
+	if i >= 0 && i < worldHeight*worldWidth {
+		return m[i]
+	}
+	return false
 }
 
 // Neighbours returns true if the map contains a point one step away from p.
-func (m WorldMap) Neighbours(p Point) bool {
+func (m *WorldMap) Neighbours(p Point) bool {
 	return m.Contains(p.Translate(1, 0)) ||
 		m.Contains(p.Translate(-1, 0)) ||
 		m.Contains(p.Translate(0, 1)) ||
@@ -24,11 +30,14 @@ func (m WorldMap) Neighbours(p Point) bool {
 }
 
 // All iterates over all the points contained in the map.
-func (m WorldMap) All() iter.Seq[Point] {
+func (m *WorldMap) All() iter.Seq[Point] {
 	return func(yield func(Point) bool) {
-		for p := range m {
-			if !yield(p) {
-				return
+		for i, added := range m {
+			if added {
+				p := Point{X: i / worldHeight, Y: i % worldHeight}
+				if !yield(p) {
+					return
+				}
 			}
 		}
 	}
