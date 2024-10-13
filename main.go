@@ -11,17 +11,21 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-var (
-	cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
-	npoints    = flag.Int("points", 100000, "number of points to draw")
-	methodName = flag.String("method", "circle", "method")
-)
-
 func main() {
+	var (
+		cpuprofile string
+		npoints    int
+		methodName string
+	)
+	flag.StringVar(&cpuprofile, "cpuprofile", "", "write cpu profile to file")
+	flag.IntVar(&npoints, "npoints", 100000, "number of points to draw")
+	flag.StringVar(&methodName, "method", "circle", "method")
 	flag.Parse()
-	method := mustFindMethod(*methodName)
-	if *cpuprofile != "" {
-		f, err := os.Create(*cpuprofile)
+
+	method := mustFindMethod(methodName)
+
+	if cpuprofile != "" {
+		f, err := os.Create(cpuprofile)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -32,7 +36,7 @@ func main() {
 	worldMap := &WorldMap{}
 	method.init(worldMap)
 
-	game := newGame(worldMap.All(), *npoints)
+	game := newGame(worldMap.All(), npoints)
 
 	go calcPointsMap(worldMap, method.pickPoint, game.addPoint)
 
