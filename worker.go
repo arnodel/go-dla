@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 
+	"math/bits"
 	"math/rand"
 )
 
@@ -28,6 +29,10 @@ func AggregatePoints(
 			p = pickPoint()
 		}
 		steps := 0
+		for !worldMap.CannotFreeWalkFrom(p) {
+			p = p.Translate(RandomFreeWalk()).Clamp()
+			steps += freeWalkSize
+		}
 		for !worldMap.Neighbours(p) {
 			randDirSrc.Next()
 			p = p.MoveAndClamp(randDirSrc.Get())
@@ -55,4 +60,19 @@ func (s *RandDirSource) Next() {
 
 func (s *RandDirSource) Get() int {
 	return int(s.r % 4)
+}
+
+// Find in one go the displacement (x, y) after N random steps of a 2D random
+// walk.
+//
+// N is a constant integer, 1 <= N <= 32 (32 because we need 2N random bits from
+// a total of 64 bits).
+func RandomFreeWalk() (x int, y int) {
+	const N = freeWalkSize
+	r := rand.Uint64()
+	k := bits.OnesCount32(uint32(r << (32 - N)))
+	l := bits.OnesCount32(uint32(r >> (64 - N)))
+	x = N - k - l
+	y = l - k
+	return
 }

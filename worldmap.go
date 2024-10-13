@@ -5,8 +5,9 @@ import "iter"
 type locationProps uint8 // Properties of a location on the map
 
 const (
-	hasPoint   locationProps = 1 << iota // A point was added here
-	isAdjacent                           // A point was added next to here
+	hasPoint locationProps = 1 << iota // A point was added here
+	isAdjacent
+	cannotFreeWalk
 )
 
 type WorldMap [worldWidth * worldHeight]locationProps
@@ -29,6 +30,17 @@ func (m *WorldMap) Add(p Point) {
 	m.merge(p.Translate(-1, 0), isAdjacent)
 	m.merge(p.Translate(0, 1), isAdjacent)
 	m.merge(p.Translate(0, -1), isAdjacent)
+	var jMax int
+	for i := -freeWalkSize; i <= freeWalkSize; i++ {
+		if i < 0 {
+			jMax = freeWalkSize + i
+		} else {
+			jMax = freeWalkSize - i
+		}
+		for j := -jMax; j <= jMax; j++ {
+			m.merge(p.Translate(i, j), cannotFreeWalk)
+		}
+	}
 }
 
 // Contains returns true if p was added to the map.
@@ -39,6 +51,12 @@ func (m *WorldMap) Contains(p Point) bool {
 // Neighbours returns true if the map contains a point one step away from p.
 func (m *WorldMap) Neighbours(p Point) bool {
 	return m.get(p)&isAdjacent != 0
+}
+
+// CannotFreeWalkFrom returns true if there is an obstacle nearby preventing a
+// free walk from p.
+func (m *WorldMap) CannotFreeWalkFrom(p Point) bool {
+	return m.get(p)&cannotFreeWalk != 0
 }
 
 // All iterates over all the points contained in the map.
