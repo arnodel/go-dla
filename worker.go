@@ -15,6 +15,7 @@ func AggregatePoints(
 	pickPoint func() Point,
 	addPoint func(Point),
 ) {
+	var randDirSrc RandDirSource
 	for {
 		p := pickPoint()
 		i := 0
@@ -27,9 +28,25 @@ func AggregatePoints(
 			p = pickPoint()
 		}
 		for !worldMap.Neighbours(p) {
-			p = p.Move(rand.Intn(4)).Clamp()
+			p = p.Move(randDirSrc.Dir()).Clamp()
 		}
 		worldMap.Add(p)
 		addPoint(p)
 	}
+}
+
+type RandDirSource struct {
+	r uint64
+	i int
+}
+
+func (s *RandDirSource) Dir() int {
+	if s.i == 0 {
+		s.i = 32
+		s.r = rand.Uint64()
+	}
+	dir := int(s.r % 4)
+	s.i--
+	s.r >>= 2
+	return dir
 }
