@@ -6,6 +6,7 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"runtime"
 	"runtime/pprof"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -13,16 +14,25 @@ import (
 
 func main() {
 	var (
-		cpuprofile string
-		npoints    int
-		methodName string
+		cpuprofile  string
+		npoints     int
+		methodName  string
+		workerCount int
 	)
 	flag.StringVar(&cpuprofile, "cpuprofile", "", "write cpu profile to file")
 	flag.IntVar(&npoints, "npoints", 300000, "number of points to draw")
 	flag.StringVar(&methodName, "method", "circle", "method")
+	flag.IntVar(&workerCount, "workers", 0, "number of workers (if < 0, add GOMAXPROCS)")
 	flag.Parse()
 
 	method := mustFindMethod(methodName)
+	if workerCount <= 0 {
+		workerCount += runtime.GOMAXPROCS(0)
+	}
+	if workerCount <= 0 {
+		workerCount = 1
+	}
+	log.Printf("Worker count: %d", workerCount)
 
 	if cpuprofile != "" {
 		f, err := os.Create(cpuprofile)
@@ -39,7 +49,9 @@ func main() {
 
 	game := NewGame(worldMap.All(), npoints)
 
-	go AggregatePoints(worldMap, method.pickPoint, game.AddPoint)
+	for i := 1; i <= workerCount; i++ {
+		go AggregatePoints(i, worldMap, method.pickPoint, game.AddPoint)
+	}
 
 	ebiten.SetWindowSize(worldHeight, worldWidth)
 	ebiten.SetWindowTitle("Diffraction-limited aggregation")

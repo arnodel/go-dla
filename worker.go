@@ -10,6 +10,7 @@ import (
 // until it aggregates, then registers it with addPoint.  It goes forever (or at
 // least until it can no longer pick a point not on the map)
 func AggregatePoints(
+	workerNumber int,
 	worldMap *WorldMap,
 	pickPoint func() Point,
 	addPoint func(Point),
@@ -20,7 +21,7 @@ func AggregatePoints(
 		for worldMap.Contains(p) {
 			i++
 			if i == 100 {
-				log.Printf("Stopping")
+				log.Printf("Worker %d stopping", workerNumber)
 				return
 			}
 			p = pickPoint()
