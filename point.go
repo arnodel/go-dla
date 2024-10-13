@@ -4,14 +4,20 @@ type Point struct {
 	X, Y int
 }
 
-// Move the point by one step (dir is expected to be 0, 1, 2 or 3)
-func (p Point) Move(dir int) Point {
+// Move the point by one step (dir is expected to be 0, 1, 2 or 3) and clamp it
+// to the confines of the world.
+func (p Point) MoveAndClamp(dir uint) Point {
 	a := dir & 1
 	b := dir >> 1
-	return Point{
-		X: p.X + a - b,
-		Y: p.Y + a + b - 1,
+	x := uint(p.X) + a - b
+	y := uint(p.Y) + a + b - 1
+	if x < worldWidth {
+		p.X = int(x)
 	}
+	if y < worldHeight {
+		p.Y = int(y)
+	}
+	return p
 }
 
 // Clamp to the point to within the confines of the world
