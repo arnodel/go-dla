@@ -32,23 +32,25 @@ func newGame(initialPoints iter.Seq[Point], maxPoints int) *Game {
 }
 
 func (g *Game) Update() error {
+	if g.pointCount >= g.maxPoints {
+		return nil
+	}
 	t0 := time.Now()
 	for {
-	OuterLoop:
 		for i := 0; i < 100; i++ {
 			select {
 			case p := <-g.pending:
-				if g.pointCount > g.maxPoints {
-					pprof.StopCPUProfile()
-					return nil
-				}
 				g.worldImage.Set(p.X, p.Y, color.Gray16{Y: uint16(65535 * (g.maxPoints - g.pointCount) / g.maxPoints)})
 				g.pointCount++
 				if g.pointCount%1000 == 0 {
 					log.Printf("Points: %d - %s", g.pointCount, time.Since(g.start))
 				}
+				if g.pointCount >= g.maxPoints {
+					pprof.StopCPUProfile()
+					return nil
+				}
 			default:
-				break OuterLoop
+				return nil
 			}
 		}
 		t := time.Since(t0)
