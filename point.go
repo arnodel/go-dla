@@ -6,17 +6,12 @@ type Point struct {
 
 // Move the point by one step (dir is expected to be 0, 1, 2 or 3)
 func (p Point) Move(dir int) Point {
-	switch dir {
-	case 0:
-		p.X++
-	case 1:
-		p.X--
-	case 2:
-		p.Y++
-	default:
-		p.Y--
+	a := dir & 1
+	b := dir >> 1
+	return Point{
+		X: p.X + a - b,
+		Y: p.Y + a + b - 1,
 	}
-	return p
 }
 
 // Clamp to the point to within the confines of the world
