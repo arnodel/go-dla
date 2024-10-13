@@ -28,7 +28,8 @@ func AggregatePoints(
 			p = pickPoint()
 		}
 		for !worldMap.Neighbours(p) {
-			p = p.Move(randDirSrc.Dir()).Clamp()
+			randDirSrc.Next()
+			p = p.Move(randDirSrc.Get()).Clamp()
 		}
 		worldMap.Add(p)
 		addPoint(p)
@@ -40,13 +41,16 @@ type RandDirSource struct {
 	i int
 }
 
-func (s *RandDirSource) Dir() int {
+func (s *RandDirSource) Next() {
 	if s.i == 0 {
-		s.i = 32
+		s.i = 31
 		s.r = rand.Uint64()
+	} else {
+		s.i--
+		s.r >>= 2
 	}
-	dir := int(s.r % 4)
-	s.i--
-	s.r >>= 2
-	return dir
+}
+
+func (s *RandDirSource) Get() int {
+	return int(s.r % 4)
 }
