@@ -14,11 +14,10 @@ func (m *WorldMap) Add(p Point) {
 
 // Contains returns true if p was added to the map.
 func (m *WorldMap) Contains(p Point) bool {
-	i := p.X*worldHeight + p.Y
-	if i >= 0 && i < worldHeight*worldWidth {
-		return m[i]
+	if p.X < 0 || p.X >= worldWidth || p.Y < 0 || p.Y >= worldHeight {
+		return false
 	}
-	return false
+	return m[p.X*worldHeight+p.Y]
 }
 
 // Neighbours returns true if the map contains a point one step away from p.
