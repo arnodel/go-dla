@@ -18,7 +18,7 @@ func main() {
 		methodName string
 	)
 	flag.StringVar(&cpuprofile, "cpuprofile", "", "write cpu profile to file")
-	flag.IntVar(&npoints, "npoints", 100000, "number of points to draw")
+	flag.IntVar(&npoints, "npoints", 300000, "number of points to draw")
 	flag.StringVar(&methodName, "method", "circle", "method")
 	flag.Parse()
 
@@ -34,11 +34,12 @@ func main() {
 	}
 
 	worldMap := &WorldMap{}
+
 	method.init(worldMap)
 
-	game := newGame(worldMap.All(), npoints)
+	game := NewGame(worldMap.All(), npoints)
 
-	go calcPointsMap(worldMap, method.pickPoint, game.addPoint)
+	go AggregatePoints(worldMap, method.pickPoint, game.AddPoint)
 
 	ebiten.SetWindowSize(worldHeight, worldWidth)
 	ebiten.SetWindowTitle("Diffraction-limited aggregation")
@@ -56,10 +57,11 @@ func mustFindMethod(name string) methodSpec {
 	panic("invalid method")
 }
 
+// A few ways
 type methodSpec struct {
-	name      string
-	init      func(*WorldMap)
-	pickPoint func() Point
+	name      string          // what to call it on the command line
+	init      func(*WorldMap) // function to add seeds to the world map
+	pickPoint func() Point    // function to pick a random point
 }
 
 var methods = []methodSpec{
@@ -119,6 +121,9 @@ func DrawCircle(m *WorldMap) {
 	const N = 2000
 	for i := 0; i < N; i++ {
 		a := math.Pi * 2 * float64(i) / N
-		m.Add(Point{X: int(worldWidth / 2 * (1 + math.Cos(a))), Y: int(worldHeight / 2 * (1 + math.Sin(a)))}.Clamp())
+		m.Add(Point{
+			X: int(worldWidth / 2 * (1 + math.Cos(a))),
+			Y: int(worldHeight / 2 * (1 + math.Sin(a))),
+		}.Clamp())
 	}
 }

@@ -11,14 +11,15 @@ import (
 )
 
 type Game struct {
-	worldImage *ebiten.Image
-	pending    chan Point
-	pointCount int
-	maxPoints  int
-	start      time.Time
+	worldImage *ebiten.Image // We draw the world here
+	pending    chan Point    // Channel where workers put points to draw
+	pointCount int           // Points drawn so far
+	maxPoints  int           // Total number of points to draw
+	start      time.Time     // When the game started (to log timings)
 }
 
-func newGame(initialPoints iter.Seq[Point], maxPoints int) *Game {
+// NewGame returns a new game where the seeds are initialPoints.
+func NewGame(initialPoints iter.Seq[Point], maxPoints int) *Game {
 	game := &Game{
 		worldImage: ebiten.NewImage(worldWidth, worldHeight),
 		pending:    make(chan Point, maxPendingPoints),
@@ -31,44 +32,53 @@ func newGame(initialPoints iter.Seq[Point], maxPoints int) *Game {
 	return game
 }
 
+// Update implements ebitengine.Game.Update().
 func (g *Game) Update() error {
-	if g.pointCount >= g.maxPoints {
+	var (
+		i  = g.pointCount
+		n  = g.maxPoints
+		t0 = time.Now()
+	)
+	if i >= n {
 		return nil
 	}
-	t0 := time.Now()
-	for {
-		for i := 0; i < 100; i++ {
-			select {
-			case p := <-g.pending:
-				g.worldImage.Set(p.X, p.Y, color.Gray16{Y: uint16(65535 * (g.maxPoints - g.pointCount) / g.maxPoints)})
-				g.pointCount++
-				if g.pointCount%1000 == 0 {
-					log.Printf("Points: %d - %s", g.pointCount, time.Since(g.start))
-				}
-				if g.pointCount >= g.maxPoints {
-					pprof.StopCPUProfile()
-					return nil
-				}
-			default:
+	defer func() { g.pointCount = i }()
+	for i%100 != 0 || time.Since(t0) < 10*time.Millisecond {
+		// ^ i%100 is there so don't call time.Since(t0) too much
+		select {
+		case p := <-g.pending:
+			// Start white and gradually fade out to black
+			g.worldImage.Set(
+				p.X, p.Y,
+				color.Gray16{Y: uint16(0xFFFF * (n - i) / n)},
+			)
+			i++
+			if i%1000 == 0 {
+				log.Printf("Points: %d - %s", i, time.Since(g.start))
+			}
+			if i >= n {
+				pprof.StopCPUProfile()
 				return nil
 			}
-		}
-		t := time.Since(t0)
-		if t > 10*time.Millisecond {
-			break
+		default:
+			return nil
 		}
 	}
+	log.Printf("Ran out of time in Update loop after %d points", i-g.pointCount)
 	return nil
 }
 
+// Draw implements ebitengine.Game.Draw().
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.DrawImage(g.worldImage, nil)
 }
 
+// Layout implements ebitengine.Game.Layout().
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 	return worldWidth, worldHeight
 }
 
-func (g *Game) addPoint(p Point) {
+// AddPoint adds a point to the pending points to draw.
+func (g *Game) AddPoint(p Point) {
 	g.pending <- p
 }

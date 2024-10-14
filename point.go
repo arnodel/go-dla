@@ -4,8 +4,8 @@ type Point struct {
 	X, Y int
 }
 
+// Move the point by one step (dir is expected to be 0, 1, 2 or 3)
 func (p Point) Move(dir int) Point {
-
 	switch dir {
 	case 0:
 		p.X++
@@ -19,6 +19,7 @@ func (p Point) Move(dir int) Point {
 	return p
 }
 
+// Clamp to the point to within the confines of the world
 func (p Point) Clamp() Point {
 	if p.X < 0 {
 		p.X = 0
@@ -33,6 +34,7 @@ func (p Point) Clamp() Point {
 	return p
 }
 
-func (p *Point) Translate(x, y int) Point {
+// Translate the point by x and y
+func (p Point) Translate(x, y int) Point {
 	return Point{X: p.X + x, Y: p.Y + y}
 }

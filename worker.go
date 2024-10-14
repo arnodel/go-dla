@@ -6,7 +6,14 @@ import (
 	"math/rand"
 )
 
-func calcPointsMap(worldMap *WorldMap, pickPoint func() Point, addPoint func(Point)) {
+// AggregatePoints uses pickPoint to choose a starting point, moves it randomly
+// until it aggregates, then registers it with addPoint.  It goes forever (or at
+// least until it can no longer pick a point not on the map)
+func AggregatePoints(
+	worldMap *WorldMap,
+	pickPoint func() Point,
+	addPoint func(Point),
+) {
 	for {
 		p := pickPoint()
 		i := 0
