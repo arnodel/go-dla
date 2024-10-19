@@ -51,6 +51,6 @@ func (s *RandDirSource) Next() {
 	}
 }
 
-func (s *RandDirSource) Get() uint {
-	return uint(s.r % 4)
+func (s *RandDirSource) Get() int {
+	return int(s.r % 4)
 }
