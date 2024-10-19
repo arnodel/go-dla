@@ -13,7 +13,7 @@ func AggregatePoints(
 	workerNumber int,
 	worldMap *WorldMap,
 	pickPoint func() Point,
-	addPoint func(Point),
+	addPoint func(Point, int),
 ) {
 	var randDirSrc RandDirSource
 	for {
@@ -27,12 +27,14 @@ func AggregatePoints(
 			}
 			p = pickPoint()
 		}
+		steps := 0
 		for !worldMap.Neighbours(p) {
 			randDirSrc.Next()
 			p = p.MoveAndClamp(randDirSrc.Get())
+			steps++
 		}
 		worldMap.Add(p)
-		addPoint(p)
+		addPoint(p, steps)
 	}
 }
 
