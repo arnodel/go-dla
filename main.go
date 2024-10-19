@@ -50,7 +50,7 @@ func main() {
 	game := NewGame(worldMap.All(), npoints)
 
 	for i := 1; i <= workerCount; i++ {
-		go AggregatePoints(i, worldMap, method.pickPoint, game.AddPoint)
+		go AggregatePoints(i, worldMap, method.pickPoint, newPointBatcher(game).AddPoint)
 	}
 
 	ebiten.SetWindowSize(worldHeight, worldWidth)

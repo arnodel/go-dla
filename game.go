@@ -20,15 +20,15 @@ type Game struct {
 }
 
 type pendingItem struct {
-	Point
-	steps int
+	points [batchSize]Point
+	steps  int
 }
 
 // NewGame returns a new game where the seeds are initialPoints.
 func NewGame(initialPoints iter.Seq[Point], maxPoints int) *Game {
 	game := &Game{
 		worldImage: ebiten.NewImage(worldWidth, worldHeight),
-		pending:    make(chan pendingItem, maxPendingPoints),
+		pending:    make(chan pendingItem, maxPendingPoints/batchSize),
 		maxPoints:  maxPoints,
 	}
 	for p := range initialPoints {
@@ -53,18 +53,20 @@ func (g *Game) Update() error {
 		g.pointCount = i
 		g.stepCount = s
 	}()
-	for i%100 != 0 || time.Since(t0) < 10*time.Millisecond {
-		// ^ i%100 is there so don't call time.Since(t0) too much
+	for k := 0; k%100 != 0 || time.Since(t0) < 10*time.Millisecond; k++ {
+		// ^ k%100 is there so don't call time.Since(t0) too much
 		select {
-		case p := <-g.pending:
-			// Start white and gradually fade out to black
-			g.worldImage.Set(
-				p.X, p.Y,
-				color.Gray16{Y: uint16(0xFFFF * (n - i) / n)},
-			)
-			i++
-			s += p.steps
-			if i%10000 == 0 {
+		case item := <-g.pending:
+			for _, p := range item.points {
+				// Start white and gradually fade out to black
+				g.worldImage.Set(
+					p.X, p.Y,
+					color.Gray16{Y: uint16(0xFFFF * (n - i) / n)},
+				)
+			}
+			s += item.steps
+			i += batchSize
+			if i%10000 < batchSize {
 				log.Printf("Points: %d - Steps = %d, %s", i, s, time.Since(g.start))
 			}
 			if i >= n {
@@ -90,9 +92,30 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 }
 
 // AddPoint adds a point to the pending points to draw.
-func (g *Game) AddPoint(p Point, steps int) {
+func (g *Game) AddBatch(points *[batchSize]Point, steps int) {
 	g.pending <- pendingItem{
-		Point: p,
-		steps: steps,
+		points: *points,
+		steps:  steps,
+	}
+}
+
+type PointBatcher struct {
+	game   *Game
+	points [batchSize]Point
+	steps  int
+	i      int
+}
+
+func newPointBatcher(game *Game) *PointBatcher {
+	return &PointBatcher{game: game}
+}
+func (b *PointBatcher) AddPoint(p Point, steps int) {
+	b.points[b.i] = p
+	b.steps += steps
+	b.i++
+	if b.i == batchSize {
+		b.game.AddBatch(&b.points, b.steps)
+		b.i = 0
+		b.steps = 0
 	}
 }
