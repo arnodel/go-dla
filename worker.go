@@ -70,8 +70,11 @@ func (s *RandDirSource) Get() int {
 func RandomFreeWalk() (x int, y int) {
 	const N = freeWalkSize
 	r := rand.Uint64()
+	// Select N bits from the lower 32 bits and count the ones
 	k := bits.OnesCount32(uint32(r << (32 - N)))
+	// Select N bits from the higher 32 bits and count the ones
 	l := bits.OnesCount32(uint32(r >> (64 - N)))
+
 	x = N - k - l
 	y = l - k
 	return
