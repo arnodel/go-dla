@@ -91,7 +91,7 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 	return worldWidth, worldHeight
 }
 
-// AddPoint adds a point to the pending points to draw.
+// AddBatch adds a batch of points to the pending items
 func (g *Game) AddBatch(points *[batchSize]Point, steps int) {
 	g.pending <- pendingItem{
 		points: *points,
@@ -99,6 +99,8 @@ func (g *Game) AddBatch(points *[batchSize]Point, steps int) {
 	}
 }
 
+// PointBatcher accumulates points to send to the game loop as a batch, so
+// others doon't have to worry about doing that.
 type PointBatcher struct {
 	game   *Game
 	points [batchSize]Point
@@ -109,6 +111,9 @@ type PointBatcher struct {
 func newPointBatcher(game *Game) *PointBatcher {
 	return &PointBatcher{game: game}
 }
+
+// AddPoint adds a point to the batcher, possibly triggering sending a batch to
+// its game if the batch size has been reached.
 func (b *PointBatcher) AddPoint(p Point, steps int) {
 	b.points[b.i] = p
 	b.steps += steps
